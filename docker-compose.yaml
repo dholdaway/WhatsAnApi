@@ -1,0 +1,17 @@
+services:
+  api:
+    build: .
+    volumes:
+      - ./static:/app/static
+      - ./images:/app/images
+    expose:
+      - "8000"
+
+  nginx:
+    image: nginx:stable-alpine
+    ports:
+      - "80:80"
+    depends_on:
+      - api
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
