@@ -15,7 +15,7 @@ This project is a simple **REST API** that simulates a **coffee shop ordering sy
 ## 🔧 **Installation & Setup**
 ### 1️⃣ **Clone the Repository**
 ```bash
-git clone https://github.com/YOUR_GITHUB_USERNAME/CoffeeShopAPI.git
+git clone https://github.com/dholdaway/CoffeeShopAPI.git
 cd CoffeeShopAPI
 ```
 
@@ -153,12 +153,6 @@ curl -X DELETE http://127.0.0.1:5000/order/1
 ## 🎉 **Contributing**
 - Feel free to submit **issues** or **pull requests**.
 - Improve the project by adding **a frontend, authentication, or a leaderboard**.
-
----
-
-## 🔗 **Resources**
-📄 **[Download API Handout](sandbox:/mnt/data/Coffee_Shop_API_Handout.pdf)**  
-📊 **[Download API Presentation](sandbox:/mnt/data/Coffee_Shop_API_Presentation.pptx)**  
 
 ---
 
