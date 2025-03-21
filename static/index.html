@@ -67,13 +67,19 @@
       box-shadow: inset 0 0 8px rgba(0, 0, 0, 0.3);
     }
 
+    .order-section h2,
+    .queue h2,
+    .ready-orders h2,
+    .menu-section h3 {
+      text-align: center;
+    }
+
     .order-section h2 {
       color: #D4A373;
       margin-bottom: 15px;
       font-size: 1.5rem;
       border-bottom: 1px solid #3E3E3E;
       padding-bottom: 5px;
-      text-align: left;
     }
 
     .order-section label {
@@ -96,21 +102,29 @@
       color: #EDE0D4;
     }
 
+    input.invalid,
+    select.invalid {
+      border: 2px solid red;
+    }
+
     button {
       margin-top: 10px;
       padding: 10px 20px;
       font-size: 1rem;
       font-weight: bold;
-      background-color: #D4A373;
+      background-color: #555;
       color: #2D2D2D;
       border: none;
       border-radius: 6px;
-      cursor: pointer;
+      cursor: not-allowed;
       transition: background 0.2s ease;
+      opacity: 0.6;
     }
 
-    button:hover {
-      background-color: #c28f64;
+    button:enabled {
+      background-color: #90EE90;
+      cursor: pointer;
+      opacity: 1;
     }
 
     #orderResult {
@@ -119,28 +133,32 @@
       color: #90ee90;
     }
 
-    .queue {
+    .queue, .ready-orders {
       flex: 1;
       background: #1E1E1E;
       border-radius: 10px;
       padding: 20px;
       max-height: 600px;
       overflow-y: auto;
+      margin-top: 20px;
     }
 
-    .queue h2 {
+    .queue h2,
+    .ready-orders h2 {
       color: #D4A373;
       font-size: 1.2rem;
     }
 
-    .queue ul {
+    .queue ul,
+    .ready-orders ul {
       list-style: none;
       padding: 0;
       margin-top: 10px;
       text-align: left;
     }
 
-    .queue li {
+    .queue li,
+    .ready-orders li {
       padding: 10px 0;
       border-bottom: 1px solid #3E3E3E;
       opacity: 0;
@@ -162,9 +180,17 @@
       }
     }
 
+    .ready-orders {
+      flex-basis: 100%;
+    }
+
     @media (max-width: 768px) {
       .layout {
         flex-direction: column;
+      }
+
+      .ready-orders {
+        flex-basis: 100%;
       }
     }
   </style>
@@ -173,13 +199,13 @@
   <h1>☕ Hipster Coffee</h1>
   <div class="layout">
 
-    <!-- Ordering + Menu Container -->
     <div class="container">
       <div id="menu"></div>
       <div class="divider"></div>
 
       <div class="order-section">
         <h2>🛒 Place Your Order</h2>
+
         <label for="customerName">👤 Your Name</label>
         <input id="customerName" placeholder="e.g. Alice">
 
@@ -188,26 +214,32 @@
 
         <label for="size">📏 Size</label>
         <select id="size">
+          <option value="">-- Choose size --</option>
           <option value="small">Small</option>
           <option value="medium">Medium</option>
           <option value="large">Large</option>
         </select>
 
-        <button onclick="placeOrder()">✅ Place Order</button>
+        <button onclick="placeOrder()" disabled>✅ Place Order</button>
         <div id="orderResult"></div>
       </div>
     </div>
 
-    <!-- Order Queue Sidebar -->
     <div class="queue">
       <h2>🧾 Order Queue</h2>
       <ul id="orderQueue"></ul>
+    </div>
+
+    <div class="ready-orders">
+      <h2>✅ Orders Ready for Collection</h2>
+      <ul id="readyList"></ul>
     </div>
   </div>
 
   <script>
     let drinkCategoryMap = {};
     const orderTimestamps = {};
+    const readyOrders = {};
 
     function getDrinkIcon(category) {
       switch (category.toLowerCase()) {
@@ -222,7 +254,7 @@
 
       for (const category in menu) {
         html += `<div style="flex: 1; min-width: 220px;">
-          <h3 style="color: #D4A373; border-bottom: 1px solid #3E3E3E; padding-bottom: 5px;">
+          <h3 class="menu-section" style="color: #D4A373; border-bottom: 1px solid #3E3E3E; padding-bottom: 5px;">
             ${getDrinkIcon(category)} ${category.charAt(0).toUpperCase() + category.slice(1)}
           </h3>`;
 
@@ -272,7 +304,7 @@
 
     async function placeOrder() {
       const order = {
-        name: document.getElementById("customerName").value,
+        name: document.getElementById("customerName").value.trim(),
         drink: document.getElementById("drink").value,
         size: document.getElementById("size").value
       };
@@ -287,6 +319,8 @@
       document.getElementById("orderResult").innerHTML = `<strong>✅ Thank you, ${order.name}!</strong>`;
       orderTimestamps[data.order_id] = new Date();
       fetchOrders();
+      document.getElementById("customerName").value = "";
+      validateForm();
     }
 
     async function fetchOrders() {
@@ -297,31 +331,60 @@
 
     function updateOrderQueue(data) {
       const queue = document.getElementById("orderQueue");
+      const ready = document.getElementById("readyList");
       queue.innerHTML = "";
+      ready.innerHTML = "";
+
+      const now = new Date();
+
       Object.entries(data).forEach(([id, order]) => {
         const category = drinkCategoryMap[order.drink] || 'default';
         const icon = getDrinkIcon(category);
+        const placedAt = orderTimestamps[id] || new Date();
+        const diff = (now - placedAt) / 1000;
 
-        let time = orderTimestamps[id];
-        if (!time) {
-          time = new Date(); // fallback if not tracked
-          orderTimestamps[id] = time;
-        }
-
-        const timeStr = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-        const item = document.createElement("li");
-        item.innerHTML = `
+        const li = document.createElement("li");
+        li.innerHTML = `
           ${icon} <strong>${order.name}</strong> – ${order.drink} (${order.size})
-          <span class="timestamp">🕒 ${timeStr}</span>
+          <span class="timestamp">🕒 ${placedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
         `;
-        queue.appendChild(item);
+
+        if (diff >= 120) {
+          ready.appendChild(li);
+        } else {
+          queue.appendChild(li);
+        }
       });
+    }
+
+    function validateForm() {
+      const nameEl = document.getElementById("customerName");
+      const drinkEl = document.getElementById("drink");
+      const sizeEl = document.getElementById("size");
+      const button = document.querySelector("button[onclick='placeOrder()']");
+
+      let valid = true;
+
+      [nameEl, drinkEl, sizeEl].forEach((el) => {
+        if (!el.value.trim()) {
+          el.classList.add("invalid");
+          valid = false;
+        } else {
+          el.classList.remove("invalid");
+        }
+      });
+
+      button.disabled = !valid;
     }
 
     window.addEventListener("DOMContentLoaded", () => {
       fetchMenu();
       fetchOrders();
+      setInterval(fetchOrders, 30000); // refresh every 30s
+
+      document.getElementById("customerName").addEventListener("input", validateForm);
+      document.getElementById("drink").addEventListener("change", validateForm);
+      document.getElementById("size").addEventListener("change", validateForm);
     });
   </script>
 </body>
