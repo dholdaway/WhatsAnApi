@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hipster Coffee Shop</title>
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;600&family=Pacifico&display=swap" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <style>
+        body {
+            font-family: 'Raleway', sans-serif;
+            background-color: #2D2D2D;
+            color: #EDE0D4;
+            text-align: center;
+            padding: 20px;
+        }
+
+        h1 {
+            font-family: 'Pacifico', cursive;
+            font-size: 3rem;
+            color: #D4A373;
+        }
+
+        .container {
+            width: 80%;
+            margin: auto;
+            max-width: 600px;
+            background: rgba(30, 30, 30, 0.9);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
+        }
+
+        button {
+            background-color: #D4A373;
+            color: #2D2D2D;
+            font-weight: bold;
+            border: none;
+            padding: 10px 15px;
+            font-size: 1rem;
+            border-radius: 5px;
+            margin-top: 10px;
+            cursor: pointer;
+            transition: background 0.3s ease-in-out;
+        }
+
+        button:hover {
+            background-color: #C28761;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 5px;
+            border: none;
+            background: #3E3E3E;
+            color: #EDE0D4;
+        }
+
+        pre {
+            background: #1E1E1E;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+    <h1>☕ Hipster Coffee API</h1>
+    <div class="container">
+        <h2>📋 View Menu (GET)</h2>
+        <button onclick="fetchMenu()">Get Menu</button>
+        <pre id="menu"></pre>
+
+        <h2>☕ Place an Order (POST)</h2>
+        <label>Name: <input type="text" id="customerName"></label>
+        <label>Drink: <select id="drink"></select></label>
+        <label>Size: <select id="size">
+            <option value="small">Small</option>
+            <option value="medium">Medium</option>
+            <option value="large">Large</option>
+        </select></label>
+        <button onclick="placeOrder()">Order</button>
+        <pre id="orderResult"></pre>
+
+        <h2>📜 View Orders (GET)</h2>
+        <button onclick="fetchOrders()">Get Orders</button>
+        <pre id="orders"></pre>
+    </div>
+
+    <script>
+        async function fetchMenu() {
+            const response = await fetch("http://127.0.0.1:5000/menu");
+            const data = await response.json();
+            document.getElementById("menu").innerText = JSON.stringify(data, null, 2);
+            populateDrinkDropdown(data);
+        }
+
+        function populateDrinkDropdown(menu) {
+            let dropdown = document.getElementById("drink");
+            dropdown.innerHTML = "";
+            for (const category in menu) {
+                for (const drink in menu[category]) {
+                    let option = document.createElement("option");
+                    option.value = drink;
+                    option.textContent = drink;
+                    dropdown.appendChild(option);
+                }
+            }
+        }
+
+        async function placeOrder() {
+            const order = {
+                name: document.getElementById("customerName").value,
+                drink: document.getElementById("drink").value,
+                size: document.getElementById("size").value
+            };
+
+            if (!order.name || !order.drink || !order.size) {
+                alert("Please fill in all fields!");
+                return;
+            }
+
+            const response = await fetch("http://127.0.0.1:5000/order", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(order)
+            });
+
+            const data = await response.json();
+            document.getElementById("orderResult").innerText = JSON.stringify(data, null, 2);
+        }
+
+        async function fetchOrders() {
+            const response = await fetch("http://127.0.0.1:5000/orders");
+            const data = await response.json();
+            document.getElementById("orders").innerText = JSON.stringify(data, null, 2);
+        }
+
+        // window.onload = fetchMenu;
+    </script>
+</body>
+</html>
